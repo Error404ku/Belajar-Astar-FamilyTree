@@ -1,5 +1,5 @@
 import heapq
-from neo4j_operation import get_generation, get_neighbors
+from neo4j_operation import get_generation, get_neighbors, get_person
 
 def heuristic(current_name, goal_name):
     # Fungsi heuristik yang mengukur perbedaan generasi antara dua individu
@@ -40,7 +40,16 @@ def greedy_best_first_search(start_name, goal_name):
 
         for neighbor in neighbors:
             if neighbor not in closed_set:
-                neighbor_h = heuristic(neighbor, goal_name)
+                # Menggunakan jenis relasi untuk menghitung bobot heuristik (misal: relasi AYAH lebih penting dari SAUDARA)
+                person_data = get_person(current)
+                relation_weight = 1  # Bobot default
+                if person_data:
+                    if neighbor in person_data['anak']:
+                        relation_weight = 0.5  # Bobot lebih rendah untuk anak
+                    elif neighbor in person_data['pasangan']:
+                        relation_weight = 0.7  # Bobot untuk pasangan
+                
+                neighbor_h = heuristic(neighbor, goal_name) * relation_weight
                 heapq.heappush(open_set, (neighbor_h, neighbor, path + [neighbor]))
                 steps.append({
                     "Aksi": "Tambahkan ke Open Set",

@@ -48,6 +48,7 @@ def tambah_relasi(orang, relasi, nama, jenis_kelamin=None):
             MERGE (father)-[:SAUDARA]-(ua)
         )
         """
+
         with driver.session() as session:
             # Menjalankan query untuk membuat relasi AYAH antara 'father' dan 'child'
             session.run(query, {'child_name': orang, 'parent_name': nama})
@@ -293,9 +294,8 @@ def get_neighbors(person_name):
     # Termasuk ayah, ibu, pasangan, dan anak-anak
     query = """
     MATCH (p:Person {name: $name})
-    OPTIONAL MATCH (p)-[:AYAH|IBU|PASANGAN]-(relative:Person)
-    OPTIONAL MATCH (p)<-[:AYAH|IBU]-(child:Person)
-    WITH collect(DISTINCT relative.name) + collect(DISTINCT child.name) AS neighbors
+    OPTIONAL MATCH (p)-[:AYAH|IBU|PASANGAN|SAUDARA|MERTUA|PAMAN|BIBI]-(relative:Person)
+    WITH collect(DISTINCT relative.name) AS neighbors
     UNWIND neighbors AS neighbor
     RETURN DISTINCT neighbor
     """
