@@ -45,7 +45,7 @@ def tambah_relasi(orang, relasi, nama, jenis_kelamin=None):
         MATCH (father:Person {name: $parent_name})
         OPTIONAL MATCH (uncleAunt:Person)-[:PAMAN|BIBI]->(child)
         FOREACH (ua IN CASE WHEN uncleAunt IS NOT NULL THEN [uncleAunt] ELSE [] END |
-            MERGE (father)-[:SAUDARA]->(ua)
+            MERGE (father)-[:SAUDARA]-(ua)
         )
         """
 
@@ -82,7 +82,7 @@ def tambah_relasi(orang, relasi, nama, jenis_kelamin=None):
         MATCH (mother:Person {name: $parent_name})
         OPTIONAL MATCH (uncleAunt:Person)-[:PAMAN|BIBI]->(child)
         FOREACH (ua IN CASE WHEN uncleAunt IS NOT NULL THEN [uncleAunt] ELSE [] END |
-            MERGE (mother)-[:SAUDARA]->(ua)
+            MERGE (mother)-[:SAUDARA]-(ua)
         )
         """
         with driver.session() as session:
@@ -136,9 +136,9 @@ def tambah_relasi(orang, relasi, nama, jenis_kelamin=None):
         query_saudara = """
         MATCH (parent:Person {name: $parent_name})
         MATCH (child:Person {name: $child_name})
-        OPTIONAL MATCH (parent)-[:AYAH|IBU]->(otherChild:Person)
+        OPTIONAL MATCH (parent)<-[:AYAH|IBU]-(otherChild:Person)
         FOREACH (oc IN CASE WHEN otherChild IS NOT NULL THEN [otherChild] ELSE [] END |
-            MERGE (child)-[:SAUDARA]->(oc)
+            MERGE (child)-[:SAUDARA]-(oc)
         )
         """
 
@@ -192,7 +192,7 @@ def tambah_relasi(orang, relasi, nama, jenis_kelamin=None):
         query_main_spouse = f"""
         MATCH (person1:Person {{name: $person1_name}})
         MATCH (person2:Person {{name: $person2_name}})
-        MERGE (person1)-[:PASANGAN]->(person2)
+        MERGE (person1)-[:PASANGAN]-(person2)
         """
 
         # Query untuk membuat relasi SAUDARA antara Anda dan saudara pasangan
@@ -201,7 +201,7 @@ def tambah_relasi(orang, relasi, nama, jenis_kelamin=None):
         MATCH (person:Person {name: $person_name})
         OPTIONAL MATCH (sibling:Person)-[:SAUDARA]-(spouse)
         FOREACH (s IN CASE WHEN sibling IS NOT NULL THEN [sibling] ELSE [] END |
-            MERGE (person)-[:SAUDARA]->(s)
+            MERGE (person)-[:SAUDARA]-(s)
         )
         """
 
