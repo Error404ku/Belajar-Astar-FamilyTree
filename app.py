@@ -63,14 +63,14 @@ if all_individuals:
             else:
                 st.error(f"Nama {jenis_relasi.lower()} tidak boleh kosong.")
 
-    st.header("Cari dan Tampilkan Silsilah dengan A*")
+    st.header("Cari dan Tampilkan Silsilah dengan Greedy Best First")
     if len(all_individuals) >= 2:
         # Input untuk memilih individu awal dan tujuan
         starting_person = st.selectbox("Pilih individu awal untuk pencarian:", options=all_individuals, index=0, key='starting_person')
         individu_tujuan = st.selectbox("Pilih individu tujuan yang ingin dicari silsilahnya:", options=all_individuals, index=0, key='individu_tujuan')
 
         if starting_person and individu_tujuan:
-            if st.button("Cari Silsilah dengan A*"):
+            if st.button("Cari Silsilah dengan Greedy Best First"):
                 path, steps = greedy_best_first_search(starting_person, individu_tujuan)
                 if path:
                     st.success(f"Silsilah dari **{starting_person}** ke **{individu_tujuan}** ditemukan:")
@@ -79,7 +79,7 @@ if all_individuals:
                     st.error(f"Tidak ada silsilah yang ditemukan dari **{starting_person}** ke **{individu_tujuan}**.")
 
                 if steps:
-                    st.header("Langkah-Langkah Proses A*")
+                    st.header("Langkah-Langkah Proses Greedy Best First")
                     steps_df = pd.DataFrame(steps)
                     st.dataframe(steps_df)
     else:
