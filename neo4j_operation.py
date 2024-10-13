@@ -164,7 +164,7 @@ def tambah_relasi(orang, relasi, nama, jenis_kelamin=None):
         with driver.session() as session:
             # Menjalankan query AYAH
             session.run(query_ayah, {'parent_name': orang, 'child_name': nama})
-            # Menjalankan query AYAH
+            # Menjalankan query IBU
             session.run(query_ibu, {'parent_name': orang, 'child_name': nama})
             # Menjalankan query PAMAN       
             session.run(query_paman, {'parent_name': orang, 'child_name': nama})
@@ -263,7 +263,7 @@ def get_person(name):
     query = """
     MATCH (p:Person {name: $name})
     OPTIONAL MATCH (p)-[:PASANGAN]->(spouse:Person)
-    OPTIONAL MATCH (p)-[:AYAH|IBU]->(child:Person)
+    OPTIONAL MATCH (p)<-[:AYAH]-(child:Person)
     RETURN p.name AS name, p.jenis_kelamin AS jenis_kelamin,
            collect(DISTINCT spouse.name) AS pasangan,
            collect(DISTINCT child.name) AS anak
@@ -313,8 +313,8 @@ def get_generation(person_name, generation=0, visited=None):
     
     query = """
     MATCH (p:Person {name: $name})
-    OPTIONAL MATCH (p)-[:AYAH]->(father:Person)
-    OPTIONAL MATCH (p)-[:IBU]->(mother:Person)
+    OPTIONAL MATCH (father:Person)-[:AYAH]->(p)
+    OPTIONAL MATCH (mother:Person)-[:IBU]->(p)
     RETURN father.name AS father_name, mother.name AS mother_name
     """
     with driver.session() as session:
