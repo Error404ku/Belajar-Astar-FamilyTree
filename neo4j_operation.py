@@ -148,7 +148,9 @@ def tambah_relasi(orang, relasi, nama, jenis_kelamin=None):
         MATCH (child:Person {name: $child_name})
         OPTIONAL MATCH (spouse:Person)-[:PASANGAN]-(parent)
         WHERE spouse.jenis_kelamin = 'laki-laki'
-            MERGE (spouse)-[:AYAH]->(s)
+            FOREACH (s IN CASE WHEN spouse IS NOT NULL THEN [spouse] ELSE [] END |
+                MERGE (spouse)-[:AYAH]->(s)
+            )     
         """
 
         # Query untuk menetapkan pasangan orang tua IBU
@@ -157,7 +159,9 @@ def tambah_relasi(orang, relasi, nama, jenis_kelamin=None):
         MATCH (child:Person {name: $child_name})
         OPTIONAL MATCH (spouse:Person)-[:PASANGAN]-(parent)
         WHERE spouse.jenis_kelamin = 'perempuan'
-            MERGE (spouse)-[:IBU]->(s)
+            FOREACH (s IN CASE WHEN spouse IS NOT NULL THEN [spouse] ELSE [] END |
+                     MERGE (spouse)-[:IBU]->(s)
+                )  
         """
 
         # Jalankan semua query dalam satu sesi
