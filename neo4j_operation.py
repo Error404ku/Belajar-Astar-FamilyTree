@@ -42,20 +42,20 @@ def tambah_relasi(orang, relasi, nama, jenis_kelamin=None):
 
     elif relasi == "Anak":
         # Menambahkan relasi 'AYAH' atau 'IBU' tergantung jenis kelamin orang tua
-        if jenis_kelamin == 'laki-laki':
-            query = """
-            MATCH (parent:Person {name: $parent_name})
-            MATCH (child:Person {name: $child_name})
+        query_ayah = """
+        MATCH (parent:Person {name: $parent_name})
+        MATCH (child:Person {name: $child_name})
+        WHERE parent.jenis_kelamin = 'laki-laki'
             MERGE (parent)-[:AYAH]->(child)
-            """
-        else:
-            query = """
-            MATCH (parent:Person {name: $parent_name})
-            MATCH (child:Person {name: $child_name})
+        """
+        query_ibu = """
+        MATCH (parent:Person {name: $parent_name})
+        MATCH (child:Person {name: $child_name})
+        WHERE parent.jenis_kelamin = 'perempuan'
             MERGE (parent)-[:IBU]->(child)
-            """
+        """
         with driver.session() as session:
-            session.run(query, {'parent_name': orang, 'child_name': nama})
+            session.run(query_ayah, {'parent_name': orang, 'child_name': nama})
 
     elif relasi in ["Suami", "Istri"]:
         # Menambahkan relasi dua arah sebagai 'PASANGAN'
