@@ -9,16 +9,18 @@ def heuristic(current_name, goal_name):
     person_data = get_person(current_name)
     
     if person_data:
-        if goal_name in person_data['anak']:
+        # Pastikan akses dictionary aman dengan .get()
+        if goal_name in person_data.get('anak', []):
             return 0.5 * generation_diff  # Lebih dekat untuk anak
-        elif goal_name in person_data['pasangan']:
+        elif goal_name in person_data.get('pasangan', []):
             return 0.7 * generation_diff  # Lebih dekat untuk pasangan
-        elif goal_name in person_data['saudara']:
+        elif goal_name in person_data.get('saudara', []):  # Menggunakan .get() untuk menghindari KeyError
             return 1.0 * generation_diff  # Saudara
-        elif goal_name in person_data['paman'] or goal_name in person_data['bibi']:
+        elif goal_name in person_data.get('paman', []) or goal_name in person_data.get('bibi', []):
             return 1.5 * generation_diff  # Lebih jauh untuk paman/bibi
     
     return 2.0 * generation_diff  # Default, misalnya saudara jauh atau yang lainnya
+
 
 def greedy_best_first_search(start_name, goal_name):
     # Mengimplementasikan Greedy Best First Search untuk menemukan jalur antara dua individu dalam silsilah keluarga
