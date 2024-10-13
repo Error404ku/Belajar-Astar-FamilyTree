@@ -2,8 +2,23 @@ import heapq
 from neo4j_operation import get_generation, get_neighbors, get_person
 
 def heuristic(current_name, goal_name):
-    # Fungsi heuristik yang mengukur perbedaan generasi antara dua individu
-    return abs(get_generation(current_name) - get_generation(goal_name))
+    # Menggunakan jarak generasi sebagai heuristic dasar
+    generation_diff = abs(get_generation(current_name) - get_generation(goal_name))
+    
+    # Menggunakan pembobotan relasi untuk memperkecil/memperbesar nilai heuristic
+    person_data = get_person(current_name)
+    
+    if person_data:
+        if goal_name in person_data['anak']:
+            return 0.5 * generation_diff  # Lebih dekat untuk anak
+        elif goal_name in person_data['pasangan']:
+            return 0.7 * generation_diff  # Lebih dekat untuk pasangan
+        elif goal_name in person_data['saudara']:
+            return 1.0 * generation_diff  # Saudara
+        elif goal_name in person_data['paman'] or goal_name in person_data['bibi']:
+            return 1.5 * generation_diff  # Lebih jauh untuk paman/bibi
+    
+    return 2.0 * generation_diff  # Default, misalnya saudara jauh atau yang lainnya
 
 def greedy_best_first_search(start_name, goal_name):
     # Mengimplementasikan Greedy Best First Search untuk menemukan jalur antara dua individu dalam silsilah keluarga
