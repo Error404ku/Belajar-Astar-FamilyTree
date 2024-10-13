@@ -14,62 +14,248 @@ def create_person(name, jenis_kelamin=None):
 
 def tambah_relasi(orang, relasi, nama, jenis_kelamin=None):
     # Menambahkan relasi antara dua individu di database Neo4j
-    # Relasi bisa berupa Ayah, Ibu, Anak, Suami, atau Istri
+    # Relasi dapat berupa Ayah, Ibu, Anak, Suami, atau Istri
 
-    # Pastikan kedua individu (orang dan nama) ada di database, jika tidak buat baru
+    # Pastikan kedua individu ada di database
     create_person(orang)
     create_person(nama, jenis_kelamin)
 
     if relasi == "Ayah":
-        # Menambahkan relasi 'AYAH' antara individu dan ayahnya
+        # Membuat relasi AYAH antara 'father' dan 'child'
         query = """
         MATCH (child:Person {name: $child_name})
         MATCH (father:Person {name: $parent_name})
         MERGE (father)-[:AYAH]->(child)
+        """          
+
+        # Membuat relasi MERTUA antara orang tua 'orang' (suami) dan 'nama' (istri)
+        query_mertua = """
+        MATCH (child:Person {name: $child_name})
+        MATCH (father:Person {name: $parent_name})
+        OPTIONAL MATCH (pasangan:Person)-[:IBU]->(child)
+        OPTIONAL MATCH (mertua:Person)-[:AYAH|IBU]->(pasangan)
+        FOREACH (m IN CASE WHEN mertua IS NOT NULL THEN [mertua] ELSE [] END |
+            MERGE (m)-[:MERTUA]->(father)
+        )
+        """         
+
+        # Membuat relasi SAUDARA antara 'father' dan paman/bibi anaknya
+        query_saudarapaman = """
+        MATCH (child:Person {name: $child_name})
+        MATCH (father:Person {name: $parent_name})
+        OPTIONAL MATCH (uncleAunt:Person)-[:PAMAN|BIBI]->(child)
+        FOREACH (ua IN CASE WHEN uncleAunt IS NOT NULL THEN [uncleAunt] ELSE [] END |
+            MERGE (father)-[:SAUDARA]-(ua)
+        )
         """
         with driver.session() as session:
-            session.run(query, {'child_name': orang, 'parent_name': nama})  # Menjalankan query
+            # Menjalankan query untuk membuat relasi AYAH antara 'father' dan 'child'
+            session.run(query, {'child_name': orang, 'parent_name': nama})
+            # Menjalankan query untuk membuat relasi MERTUA antara 'father' dan pasangan anak
+            session.run(query_mertua, {'child_name': orang, 'parent_name': nama})
+            # Menjalankan query untuk membuat relasi SAUDARA antara 'father' dan paman/bibi anaknya
+            session.run(query_saudarapaman, {'child_name': orang, 'parent_name': nama})
 
     elif relasi == "Ibu":
-        # Menambahkan relasi 'IBU' antara individu dan ibunya
+        # Membuat relasi IBU antara 'mother' dan 'child'
         query = """
         MATCH (child:Person {name: $child_name})
         MATCH (mother:Person {name: $parent_name})
         MERGE (mother)-[:IBU]->(child)
+        """ 
+
+        # Membuat relasi MERTUA antara orang tua 'orang' (suami) dan 'nama' (istri)
+        query_mertua = """
+        MATCH (child:Person {name: $child_name})
+        MATCH (mother:Person {name: $parent_name})
+        OPTIONAL MATCH (pasangan:Person)-[:AYAH]->(child)
+        OPTIONAL MATCH (mertua:Person)-[:AYAH|IBU]->(pasangan)
+        FOREACH (m IN CASE WHEN mertua IS NOT NULL THEN [mertua] ELSE [] END |
+            MERGE (m)-[:MERTUA]->(mother)
+        )
+        """  
+
+        # Membuat relasi SAUDARA antara 'mother' dan paman/bibi anaknya
+        query_saudarapaman = """
+        MATCH (child:Person {name: $child_name})
+        MATCH (mother:Person {name: $parent_name})
+        OPTIONAL MATCH (uncleAunt:Person)-[:PAMAN|BIBI]->(child)
+        FOREACH (ua IN CASE WHEN uncleAunt IS NOT NULL THEN [uncleAunt] ELSE [] END |
+            MERGE (mother)-[:SAUDARA]-(ua)
+        )
         """
         with driver.session() as session:
+            # Menjalankan query untuk membuat relasi SAUDARA antara 'mother' dan paman/bibi anaknya
+            session.run(query_saudarapaman, {'child_name': orang, 'parent_name': nama})
+            # Menjalankan query untuk membuat relasi IBU antara 'mother' dan 'child'
             session.run(query, {'child_name': orang, 'parent_name': nama})
+            # Menjalankan query untuk membuat relasi MERTUA antara orang tua (suami/istri) dan 'mother'
+            session.run(query_mertua, {'child_name': orang, 'parent_name': nama})
 
     elif relasi == "Anak":
-        # Menambahkan relasi 'AYAH' atau 'IBU' tergantung jenis kelamin orang tua
+
+        # Query untuk membuat relasi AYAH
         query_ayah = """
         MATCH (parent:Person {name: $parent_name})
         MATCH (child:Person {name: $child_name})
         WHERE parent.jenis_kelamin = 'laki-laki'
             MERGE (parent)-[:AYAH]->(child)
         """
+
+         # Query untuk membuat relasi IBU
         query_ibu = """
         MATCH (parent:Person {name: $parent_name})
         MATCH (child:Person {name: $child_name})
         WHERE parent.jenis_kelamin = 'perempuan'
             MERGE (parent)-[:IBU]->(child)
         """
+        # Query untuk membuat relasi PAMAN
+        query_paman = """
+        MATCH (parent:Person {name: $parent_name})
+        MATCH (child:Person {name: $child_name})
+        OPTIONAL MATCH (paman:Person)-[:SAUDARA]-(parent)
+        WHERE paman.jenis_kelamin = 'laki-laki'
+            FOREACH (ua IN CASE WHEN paman IS NOT NULL THEN [paman] ELSE [] END |
+                MERGE (ua)-[:PAMAN]->(child)
+            )
+        """
+
+        # Query untuk membuat relasi BIBI
+        query_bibi = """
+        MATCH (parent:Person {name: $parent_name})
+        MATCH (child:Person {name: $child_name})
+        OPTIONAL MATCH (bibi:Person)-[:SAUDARA]-(parent)
+        WHERE bibi.jenis_kelamin = 'perempuan'
+            FOREACH (ua IN CASE WHEN bibi IS NOT NULL THEN [bibi] ELSE [] END |
+                MERGE (ua)-[:BIBI]->(child)
+            )
+        """
+
+        # Query untuk membuat relasi SAUDARA antara anak baru dan anak-anak lain dari orang tua yang sama
+        query_saudara = """
+        MATCH (parent:Person {name: $parent_name})
+        MATCH (child:Person {name: $child_name})
+        OPTIONAL MATCH (parent)-[:AYAH|IBU]->(otherChild:Person)
+        FOREACH (oc IN CASE WHEN otherChild IS NOT NULL THEN [otherChild] ELSE [] END |
+            MERGE (child)-[:SAUDARA]-(oc)
+        )
+        """
+
+        # Query untuk menetapkan pasangan orang tua AYAH
+        query_ayah_spouse = """
+        MATCH (parent:Person {name: $parent_name})
+        MATCH (child:Person {name: $child_name})
+        OPTIONAL MATCH (spouse:Person)-[:PASANGAN]-(parent)
+        WHERE spouse.jenis_kelamin = 'laki-laki'
+            MERGE (spouse)-[:AYAH]->(s)
+        """
+
+        # Query untuk menetapkan pasangan orang tua IBU
+        query_ibu_spouse = """
+        MATCH (parent:Person {name: $parent_name})
+        MATCH (child:Person {name: $child_name})
+        OPTIONAL MATCH (spouse:Person)-[:PASANGAN]-(parent)
+        WHERE spouse.jenis_kelamin = 'perempuan'
+            MERGE (spouse)-[:IBU]->(s)
+        """
+
+        # Jalankan semua query dalam satu sesi
         with driver.session() as session:
+            # Menjalankan query AYAH
             session.run(query_ayah, {'parent_name': orang, 'child_name': nama})
+            # Menjalankan query AYAH
+            session.run(query_ibu, {'parent_name': orang, 'child_name': nama})
+            # Menjalankan query PAMAN       
+            session.run(query_paman, {'parent_name': orang, 'child_name': nama})
+            # Menjalankan query BIBI
+            session.run(query_bibi, {'parent_name': orang, 'child_name': nama})
+            # Menjalankan query SAUDARA
+            session.run(query_saudara, {'parent_name': orang, 'child_name': nama})
+            # Menjalankan query untuk menetapkan pasangan sebagai AYAH
+            session.run(query_ayah_spouse, {'parent_name': orang, 'child_name': nama})
+            # Menjalankan query untuk menetapkan pasangan sebagai IBU
+            session.run(query_ibu_spouse, {'parent_name': orang, 'child_name': nama})
 
     elif relasi in ["Suami", "Istri"]:
-        # Menambahkan relasi dua arah sebagai 'PASANGAN'
-        query = """
-        MATCH (p1:Person {name: $name1})
-        MATCH (p2:Person {name: $name2})
-        MERGE (p1)-[:PASANGAN]->(p2)
-        MERGE (p2)-[:PASANGAN]->(p1)
+         # Tentukan jenis relasi dan gender pasangan
+        if jenis_kelamin == 'laki-laki':
+            main_relation = "SUAMI"
+        else:
+            main_relation = "ISTRI"
+
+        # Query untuk membuat relasi SUAMI atau ISTRI
+        query_main_spouse = f"""
+        MATCH (person1:Person {{name: $person1_name}})
+        MATCH (person2:Person {{name: $person2_name}})
+        MERGE (person1)-[:PASANGAN]-(person2)
         """
+
+        # Query untuk membuat relasi SAUDARA antara Anda dan saudara pasangan
+        query_saudara_pasangan = """
+        MATCH (spouse:Person {name: $spouse_name})
+        MATCH (person:Person {name: $person_name})
+        OPTIONAL MATCH (sibling:Person)-[:SAUDARA]-(spouse)
+        FOREACH (s IN CASE WHEN sibling IS NOT NULL THEN [sibling] ELSE [] END |
+            MERGE (person)-[:SAUDARA]-(s)
+        )
+        """
+
+        # Query untuk membuat relasi AYAH atau IBU antara Anda dan anak-anak pasangan
+        query_children = f"""
+        MATCH (spouse:Person {{ name: $spouse_name }})
+        MATCH (person:Person {{ name: $person_name }})
+        OPTIONAL MATCH (spouse)-[:AYAH|IBU]->(child:Person)
+        FOREACH (c IN CASE WHEN child IS NOT NULL THEN [child] ELSE [] END |
+            MERGE (person)-[:{'AYAH' if main_relation == 'SUAMI' else 'IBU'}]->(c)
+        )
+        """
+
+        # Query untuk membuat relasi PAMAN antara paman pasangan dan Anda
+        query_paman = """
+        MATCH (spouse:Person {name: $spouse_name})
+        MATCH (person:Person {name: $person_name})
+        OPTIONAL MATCH (uncleAunt:Person)-[:PAMAN]->(spouse)
+        FOREACH (ua IN CASE WHEN uncleAunt IS NOT NULL THEN [uncleAunt] ELSE [] END |
+            MERGE (ua)-[:PAMAN]->(person)
+        )
+        """
+
+        # Query untuk membuat relasi BIBI antara bibi pasangan dan Anda
+        query_bibi = """
+        MATCH (spouse:Person {name: $spouse_name})
+        MATCH (person:Person {name: $person_name})
+        OPTIONAL MATCH (uncleAunt:Person)-[:BIBI]->(spouse)
+        FOREACH (ua IN CASE WHEN uncleAunt IS NOT NULL THEN [uncleAunt] ELSE [] END |
+            MERGE (ua)-[:BIBI]->(person)
+        )
+        """
+
+        # Query untuk membuat relasi MERTUA antara orang tua pasangan dan Anda
+        query_mertua = """
+        MATCH (spouse:Person {name: $spouse_name})
+        MATCH (person:Person {name: $person_name})
+        OPTIONAL MATCH (parent:Person)-[:AYAH|IBU]->(spouse)
+        FOREACH (p IN CASE WHEN parent IS NOT NULL THEN [parent] ELSE [] END |
+            MERGE (p)-[:MERTUA]->(person)
+        )
+        """
+
         with driver.session() as session:
-            session.run(query, {'name1': orang, 'name2': nama})
+            # Menjalankan query SUAMI atau ISTRI
+            session.run(query_main_spouse, {'person1_name': orang, 'person2_name': nama})
+            # Menjalankan query SAUDARA pasangan
+            session.run(query_saudara_pasangan, {'spouse_name': orang, 'person_name': nama})
+            # Menjalankan query AYAH atau IBU untuk anak-anak pasangan
+            session.run(query_children, {'spouse_name': orang, 'person_name': nama})
+            # Menjalankan query PAMAN untuk paman pasangan
+            session.run(query_paman, {'spouse_name': orang, 'person_name': nama})
+            # Menjalankan query BIBI untuk bibi pasangan
+            session.run(query_bibi, {'spouse_name': orang, 'person_name': nama})
+            # Menjalankan query MERTUA untuk orang tua pasangan
+            session.run(query_mertua, {'spouse_name': orang, 'person_name': nama})
 
     else:
-        st.error("Relasi tidak dikenal.")  # Menampilkan error jika relasi tidak dikenali
+        st.error("Relasi tidak dikenal.")
 
 def get_person(name):
     # Mengambil informasi individu dari database Neo4j, termasuk pasangan dan anak-anaknya
