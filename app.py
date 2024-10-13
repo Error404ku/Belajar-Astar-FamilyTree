@@ -6,7 +6,7 @@ from neo4j_operation import (
     get_person,
     get_all_individuals
 )
-from a_star import a_star_search
+from greedy_best_first import greedy_best_first_search
 
 # Aplikasi Streamlit
 
@@ -71,7 +71,7 @@ if all_individuals:
 
         if starting_person and individu_tujuan:
             if st.button("Cari Silsilah dengan A*"):
-                path, steps = a_star_search(starting_person, individu_tujuan)
+                path, steps = greedy_best_first_search(starting_person, individu_tujuan)
                 if path:
                     st.success(f"Silsilah dari **{starting_person}** ke **{individu_tujuan}** ditemukan:")
                     st.write(" -> ".join(path))
