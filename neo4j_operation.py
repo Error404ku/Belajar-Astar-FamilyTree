@@ -310,7 +310,8 @@ def get_generation(person_name, generation=0, visited=None):
     if person_name in visited:
         return generation  # Mencegah loop jika sudah dikunjungi
     visited.add(person_name)
-    
+
+    # Query untuk mengambil ayah dan ibu dalam satu kali query
     query = """
     MATCH (p:Person {name: $name})
     OPTIONAL MATCH (father:Person)-[:AYAH]->(p)
@@ -320,9 +321,20 @@ def get_generation(person_name, generation=0, visited=None):
     with driver.session() as session:
         result = session.run(query, {'name': person_name})
         record = result.single()
+
+        # Jika individu tidak memiliki ayah atau ibu, kembalikan generasi saat ini
         if not record or (record['father_name'] is None and record['mother_name'] is None):
-            return generation  # Jika tidak ada orang tua, kembalikan generasi saat ini
+            return generation  
+
         # Rekursif menghitung generasi berdasarkan orang tua
-        father_gen = get_generation(record['father_name'], generation + 1, visited) if record['father_name'] else generation
-        mother_gen = get_generation(record['mother_name'], generation + 1, visited) if record['mother_name'] else generation
-        return max(father_gen, mother_gen)  # Mengambil generasi terbesar dari ayah atau ibu
+        father_gen = generation
+        mother_gen = generation
+
+        if record['father_name']:
+            father_gen = get_generation(record['father_name'], generation + 1, visited)
+        
+        if record['mother_name']:
+            mother_gen = get_generation(record['mother_name'], generation + 1, visited)
+        
+        # Mengambil generasi terbesar dari ayah atau ibu
+        return max(father_gen, mother_gen)
