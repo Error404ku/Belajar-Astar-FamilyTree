@@ -167,19 +167,19 @@ def tambah_relasi(orang, relasi, nama, jenis_kelamin=None):
         # Jalankan semua query dalam satu sesi
         with driver.session() as session:
             # Menjalankan query AYAH
-            session.run(query_ayah, {'parent_name': orang, 'child_name': nama})
+            session.run(query_ayah, {'parent_name': nama, 'child_name': orang})
             # Menjalankan query IBU
-            session.run(query_ibu, {'parent_name': orang, 'child_name': nama})
+            session.run(query_ibu, {'parent_name': nama, 'child_name': orang})
             # Menjalankan query PAMAN       
-            session.run(query_paman, {'parent_name': orang, 'child_name': nama})
+            session.run(query_paman, {'parent_name': nama, 'child_name': orang})
             # Menjalankan query BIBI
-            session.run(query_bibi, {'parent_name': orang, 'child_name': nama})
+            session.run(query_bibi, {'parent_name': nama, 'child_name': orang})
             # Menjalankan query SAUDARA
-            session.run(query_saudara, {'parent_name': orang, 'child_name': nama})
+            session.run(query_saudara, {'parent_name': nama, 'child_name': orang})
             # Menjalankan query untuk menetapkan pasangan sebagai AYAH
-            session.run(query_ayah_spouse, {'parent_name': orang, 'child_name': nama})
+            session.run(query_ayah_spouse, {'parent_name': nama, 'child_name': orang})
             # Menjalankan query untuk menetapkan pasangan sebagai IBU
-            session.run(query_ibu_spouse, {'parent_name': orang, 'child_name': nama})
+            session.run(query_ibu_spouse, {'parent_name': nama, 'child_name': orang})
 
     elif relasi in ["Suami", "Istri"]:
          # Tentukan jenis relasi dan gender pasangan
