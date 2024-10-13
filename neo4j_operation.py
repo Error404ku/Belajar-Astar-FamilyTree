@@ -100,7 +100,7 @@ def tambah_relasi(orang, relasi, nama, jenis_kelamin=None):
         MATCH (parent:Person {name: $parent_name})
         MATCH (child:Person {name: $child_name})
         WHERE parent.jenis_kelamin = 'laki-laki'
-            MERGE (parent)-[:AYAH]->(child)
+            MERGE (child)-[:AYAH]->(parent)
         """
 
          # Query untuk membuat relasi IBU
@@ -108,7 +108,7 @@ def tambah_relasi(orang, relasi, nama, jenis_kelamin=None):
         MATCH (parent:Person {name: $parent_name})
         MATCH (child:Person {name: $child_name})
         WHERE parent.jenis_kelamin = 'perempuan'
-            MERGE (parent)-[:IBU]->(child)
+            MERGE (child)-[:IBU]->(parent)
         """
         # Query untuk membuat relasi PAMAN
         query_paman = """
@@ -149,7 +149,7 @@ def tambah_relasi(orang, relasi, nama, jenis_kelamin=None):
         OPTIONAL MATCH (spouse:Person)-[:PASANGAN]-(parent)
         WHERE spouse.jenis_kelamin = 'laki-laki'
             FOREACH (s IN CASE WHEN spouse IS NOT NULL THEN [spouse] ELSE [] END |
-                MERGE (spouse)-[:AYAH]->(s)
+                MERGE (spouse)-[:AYAH]->(child)
             )     
         """
 
@@ -160,7 +160,7 @@ def tambah_relasi(orang, relasi, nama, jenis_kelamin=None):
         OPTIONAL MATCH (spouse:Person)-[:PASANGAN]-(parent)
         WHERE spouse.jenis_kelamin = 'perempuan'
             FOREACH (s IN CASE WHEN spouse IS NOT NULL THEN [spouse] ELSE [] END |
-                     MERGE (spouse)-[:IBU]->(s)
+                     MERGE (spouse)-[:IBU]->(child)
                 )  
         """
 
@@ -175,7 +175,7 @@ def tambah_relasi(orang, relasi, nama, jenis_kelamin=None):
             # Menjalankan query BIBI
             session.run(query_bibi, {'parent_name': nama, 'child_name': orang})
             # Menjalankan query SAUDARA
-            session.run(query_saudara, {'parent_name': nama, 'child_name': orang})
+            session.run(query_saudara, {'parent_name': orang, 'child_name': nama})
             # Menjalankan query untuk menetapkan pasangan sebagai AYAH
             session.run(query_ayah_spouse, {'parent_name': nama, 'child_name': orang})
             # Menjalankan query untuk menetapkan pasangan sebagai IBU
