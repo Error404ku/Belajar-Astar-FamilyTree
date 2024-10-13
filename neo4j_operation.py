@@ -136,7 +136,7 @@ def tambah_relasi(orang, relasi, nama, jenis_kelamin=None):
         query_saudara = """
         MATCH (parent:Person {name: $parent_name})
         MATCH (child:Person {name: $child_name})
-        OPTIONAL MATCH (parent)<-[:AYAH|IBU]-(otherChild:Person)
+        OPTIONAL MATCH (otherChild:Person)<-[:AYAH|IBU]-(parent)
         FOREACH (oc IN CASE WHEN otherChild IS NOT NULL THEN [otherChild] ELSE [] END |
             MERGE (child)-[:SAUDARA]-(oc)
         )
